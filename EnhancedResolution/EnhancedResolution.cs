@@ -13,17 +13,17 @@ using static MelonLoader.UnhollowerSupport;
 
 namespace Enhanced_Resolution
 {
-    public class EnhancedResolution: MelonMod
+    public class EnhancedResolution : MelonMod
     {
         // Camera
         List<Camera> camerasOrtho;
         RenderTexture newRT, oldRT;
         GameObject UI = new GameObject(), cameraTemp = new GameObject(), UIcopy, token;
-        int counterUI = 0;
+        int counterUI = 0, counterBooks = 0;
         List<float> ingameOrthoUI = new List<float>(), menuOrthoUI = new List<float>();
         float oldYScaleBar = -1;
         bool fixUIBool = false, fixUIBook = false, fixOrthoPlay = false;
-        Transform DiagEffects;
+        Transform DiagEffects, uiPivot, pivot;
         public override void OnUpdate()
         {
             try
@@ -34,10 +34,10 @@ namespace Enhanced_Resolution
                     Camera main = GameObject.Find("__Prerequisites__/Angled Camera Rig/LocalSpace/Main Camera").GetComponent<Camera>();
                     camerasOrtho = new List<Camera>();
                     camerasOrtho.Add(main);
-                    
+
                     oldRT = main.targetTexture;
 
-                    
+
                     newRT = new RenderTexture();
                     if (oldRT != null)
                     {
@@ -53,6 +53,7 @@ namespace Enhanced_Resolution
                         // Assign the new RenderTexture to the camera
                         main.targetTexture = newRT;
                     }
+                    MelonLogger.Msg($"EnhancedResolution: RenderTexture created with dimensions {newRT.width}x{newRT.height} and format {newRT.format}");
                     GameObject.DontDestroyOnLoad(oldRT);
                     GameObject.DontDestroyOnLoad(newRT);
                     // Set RT for playerCameras
@@ -67,87 +68,98 @@ namespace Enhanced_Resolution
                             }
                         }
                     }
-
+                    MelonLogger.Msg($"EnhancedResolution: RenderTexture set for {renderers.Length} renderers in __Prerequisites__");
                     // Set RT for cutscenCameras
-                    Camera[] cameras = GameObject.Find("Cutscenes").GetComponentsInChildren<Camera>(true);
-                    foreach (Camera camera in cameras)
-                    {
-                        if (camera.targetTexture == oldRT)
+                    Camera[] cameras;
+                    if (GameObject.Find("Cutscenes")) {
+                        cameras = GameObject.Find("Cutscenes").GetComponentsInChildren<Camera>(true);
+                        foreach (Camera camera in cameras)
                         {
-                            camera.targetTexture = newRT;
-                            camerasOrtho.Add(camera);
-                        }
+                            if (camera.targetTexture == oldRT)
+                            {
+                                camera.targetTexture = newRT;
+                                camerasOrtho.Add(camera);
+                            }
 
+                        }
+                        MelonLogger.Msg($"EnhancedResolution: RenderTexture set for {cameras.Length} cameras in Cutscenes");
                     }
-                    // Set RT for Events
-                    cameras = GameObject.Find("Events").GetComponentsInChildren<Camera>(true);
-                    foreach (Camera camera in cameras)
-                    {
-                        if (camera.targetTexture == oldRT)
-                        {
-                            camera.targetTexture = newRT;
-                            camerasOrtho.Add(camera);
-                        }
 
+                    // Set RT for Events
+                    if (GameObject.Find("Events")) {
+                        cameras = GameObject.Find("Events").GetComponentsInChildren<Camera>(true);
+                        foreach (Camera camera in cameras)
+                        {
+                            if (camera.targetTexture == oldRT)
+                            {
+                                camera.targetTexture = newRT;
+                                camerasOrtho.Add(camera);
+
+                            }
+
+                        }
+                        MelonLogger.Msg($"EnhancedResolution: RenderTexture set for {cameras.Length} cameras in Events");
                     }
 
 
                     cameras = GameObject.Find("UI/").GetComponentsInChildren<Camera>(true);
-                    switch(counterUI){
+                    switch (counterUI)
+                    {
                         case 0:
                             UI = GameObject.Find("UI/");
-                            DiagEffects = FindByNameWithSlashes(UI.transform, "Diag/Effects Camera");   
+                            DiagEffects = FindByNameWithSlashes(UI.transform, "Diag/Effects Camera");
                             cameraTemp = GameObject.Instantiate(UI);
                             cameraTemp.name = "CameraTemp";
                             GameObject.Destroy(cameraTemp.transform.Find("Manager").GetComponent<PlayerState>());
                             cameraTemp.SetActive(false);
                             GameObject.DontDestroyOnLoad(cameraTemp); token = new GameObject();
 
-                            //UIcopy = GameObject.Instantiate(cameraTemp);
-                            //UIcopy.name = "UICopy";
+                            UIcopy = GameObject.Instantiate(cameraTemp);
+                            UIcopy.name = "UICopy";
                             string[] keywords = { "PauseMenu" };
-                            for( int i = 0; i < UI.transform.childCount; i++)
+                            for (int i = 0; i < UI.transform.childCount; i++)
                             {
                                 if (keywords.Any(UI.transform.GetChild(i).name.Contains)) UI.transform.GetChild(i).gameObject.SetActive(false);
                             }
-                            cameras = UI.GetComponentsInChildren<Camera>(true);
+                            cameras = UIcopy.GetComponentsInChildren<Camera>(true);
                             counterUI++;
                             break;
                         case 1:
-                        //case 2:
-                        //    if (cameraTemp == null)
-                        //    {
-                        //        MelonLogger.Msg("Searching cameraTemP");
-                        //        cameraTemp = GameObject.Find("CameraTemp");
-                        //        if (cameraTemp == null)
-                        //        {
-                        //            MelonLogger.Msg("cameraTemP not found");
-                        //        }
-                        //    }
-                        //    if (UIcopy != null)
-                        //    {
-                        //        GameObject.Destroy(UIcopy);
-                        //    }
-                        //    UIcopy = GameObject.Instantiate(cameraTemp);
-                        //    UIcopy.name = "UICopy";
-                        //    cameras = UIcopy.GetComponentsInChildren<Camera>(true);
+                        case 2:
+                            if (cameraTemp == null)
+                            {
+                                MelonLogger.Msg("Searching cameraTemP");
+                                cameraTemp = GameObject.Find("CameraTemp");
+                                if (cameraTemp == null)
+                                {
+                                    MelonLogger.Msg("cameraTemP not found");
+                                }
+                            }
+                            if (UIcopy != null)
+                            {
+                                GameObject.Destroy(UIcopy);
+                            }
+                            UIcopy = GameObject.Instantiate(cameraTemp);
+                            UIcopy.name = "UICopy";
+                            cameras = UIcopy.GetComponentsInChildren<Camera>(true);
                             counterUI = 2;
                             break;
                     };
-                        
+                    MelonLogger.Msg($"EnhancedResolution: RenderTexture set for {cameras.Length} cameras in UI");
                     foreach (Camera camera in cameras)
                     {
                         if (camera.targetTexture == oldRT)
                         {
                             camerasOrtho.Add(camera);
-                            camera.targetTexture = newRT;                        
+                            camera.targetTexture = newRT;
                         }
                     }
 
-                    
+
                     fixUIBool = false;
                     fixUIBook = false;
                     fixOrthoPlay = false;
+                    counterBooks = 0;
                     token = new GameObject();
                     token.name = "EnhancedResolutionToken";
                 }
@@ -161,50 +173,66 @@ namespace Enhanced_Resolution
 
             try
             {
-                if (GameObject.Find("__Prerequisites__/Character Origin/Character Root/Ellie_Default") != null && camerasOrtho != null )
+                if (GameObject.Find("__Prerequisites__/Character Origin/Character Root/Ellie_Default") != null && camerasOrtho != null)
                 {
                     UIcopy?.SetActive(true);
 
-                    //if (! fixUIBool)
-                    //{
-                    //    MelonLogger.Msg("adjust UI");
-                    //    string[] keywords = { "Inventory" };
-                    //    for (int i = 0; i < UI.transform.GetChildCount(); i++)
-                    //    {
-                    //        if (keywords.Any(UI.transform.GetChild(i).name.Contains)) UI.transform.GetChild(i).gameObject.SetActive(true);
-                    //    }
-                    //    fixUIBool = fixInterfaceUI(cameraTemp, UI);
-                    //    for (int i = 0; i < UI.transform.GetChildCount(); i++)
-                    //    {
-                    //        if (keywords.Any(UI.transform.GetChild(i).name.Contains)) UI.transform.GetChild(i).gameObject.SetActive(false);
-                    //    }
-                    //    if(counterUI < 2)fixUIBool = fixInterfaceUI(UIcopy, UI);
-                    //}
-                    //if(PlayerState.gameState == PlayerState.gameStates.play && !fixUIBook)
-                    //{
-                    //    fixBookManager(UI.transform.Find("Manager").GetComponent<BookManager>(), UIcopy?.transform.Find("BookCanvas"), DiagEffects?.GetComponent<MainFader>());
-                    //    fixUIBook = true;
-                    //}
+                    if (!fixUIBool)
+                    {
+                        MelonLogger.Msg("adjust UI");
+                        string[] keywords = { "Inventory" };
+                        for (int i = 0; i < UI.transform.GetChildCount(); i++)
+                        {
+                            if (keywords.Any(UI.transform.GetChild(i).name.Contains)) UI.transform.GetChild(i).gameObject.SetActive(true);
+                        }
+                        fixUIBool = fixInterfaceUI(cameraTemp, UI);
+                        for (int i = 0; i < UI.transform.GetChildCount(); i++)
+                        {
+                            if (keywords.Any(UI.transform.GetChild(i).name.Contains)) UI.transform.GetChild(i).gameObject.SetActive(false);
+                        }
+                        if (counterUI < 2) fixUIBool = fixInterfaceUI(UIcopy, UI);
+                    }
+                    if (PlayerState.gameState == PlayerState.gameStates.play && !fixUIBook)
+                    {
+                        fixBookManager(UI.transform.Find("Manager").GetComponent<BookManager>(), UIcopy?.transform.Find("BookCanvas"), DiagEffects?.GetComponent<MainFader>());
+                        fixUIBook = true;
+                    }
+                    if(PlayerState.gameState == PlayerState.gameStates.inventory && fixUIBook)
+                    {
+                        if (uiPivot == null) uiPivot = UI.transform.Find("Inventory/InventoryCanvas/Radio Diagnostics Mask/Objects/Memories/Zero/Pivot");
+                        int uiPivotCount = uiPivot.GetChildCount();
+                        if(uiPivotCount > counterBooks)
+                        {
+                            if(pivot == null) pivot = UIcopy.transform.Find("Inventory/InventoryCanvas/Radio Diagnostics Mask/Objects/Memories/Zero/Pivot");
+                            for ( int i = counterBooks; i < uiPivotCount; i++)
+                            {
+                                GameObject.Instantiate( uiPivot.GetChild(i), pivot);
+                            }
+                            counterBooks = uiPivotCount;
+                        }
+                    }
 
-                    //float newYScaleBar = DiagEffects.Find("Bars/TopBar").localScale.y;
-                    //if (oldYScaleBar != newYScaleBar)
-                    //{
-                    //    MelonLogger.Msg("adjust BarBoxes");
-                    //    oldYScaleBar = newYScaleBar;
-                    //    if (UIcopy != null)
-                    //    {
-                    //        Transform DiagEffTarget = FindByNameWithSlashes(UIcopy.transform, "Diag/Effects Camera");
-                    //        setDimUI(UIcopy.transform, GameObject.Find("UI/").transform, DiagEffTarget, DiagEffects);
-                    //    }
-                    //}
-                    if (PlayerState.gameState != PlayerState.gameStates.play || !fixOrthoPlay )
+                    float newYScaleBar = DiagEffects.Find("Bars/TopBar").localScale.y;
+                    if (oldYScaleBar != newYScaleBar)
+                    {
+                        MelonLogger.Msg("adjust BarBoxes");
+                        oldYScaleBar = newYScaleBar;
+                        if (UIcopy != null)
+                        {
+                            Transform DiagEffTarget = FindByNameWithSlashes(UIcopy.transform, "Diag/Effects Camera");
+                            setDimUI(UIcopy.transform, GameObject.Find("UI/").transform, DiagEffTarget, DiagEffects);
+                        }
+                    }
+
+
+                    if (PlayerState.gameState != PlayerState.gameStates.play || !fixOrthoPlay)
                     {
                         foreach (Camera cam in camerasOrtho)
                         {
                             cam.orthographicSize = 18;
                         }
-                        fixOrthoPlay = (PlayerState.gameState != PlayerState.gameStates.play)? false : true;
-                        if( counterUI < 2 ) fixOrthoPlay = (PlayerState.gameState != PlayerState.gameStates.inventory)? false : true;
+                        fixOrthoPlay = (PlayerState.gameState != PlayerState.gameStates.play) ? false : true;
+                        if (counterUI < 2) fixOrthoPlay = (PlayerState.gameState != PlayerState.gameStates.inventory) ? false : true;
                     }
 
                 }
@@ -226,7 +254,7 @@ namespace Enhanced_Resolution
 
         bool checkScene()
         {
-            string[] keywords = {""};
+            string[] keywords = { "" };
             return !keywords.Any(SceneManager.GetActiveScene().name.Contains);
         }
 
@@ -257,7 +285,7 @@ namespace Enhanced_Resolution
                         MelonLogger.Error($"fixInterfaceUI(): failed finding childObject from {objects.name}");
                         return false;
                     }
-                    if(!recHelper(childObject, childObjectOri))return false;
+                    if (!recHelper(childObject, childObjectOri)) return false;
                 }
             }
 
@@ -266,7 +294,7 @@ namespace Enhanced_Resolution
 
         bool recHelper(Transform childObject, Transform childObjectOri)
         {
-            
+
             for (int w = 0; w < childObject.GetChildCount(); w++)
             {
                 Transform textObject = childObject.GetChild(w);
@@ -305,7 +333,7 @@ namespace Enhanced_Resolution
             if (topBar != null)
             {
                 float targetTop = targetOri.Find("Bars/TopBar").localScale.y;
-                targetTop = (targetTop < 2) ? targetTop * 3 : targetTop; 
+                targetTop = (targetTop < 2) ? targetTop * 3 : targetTop;
                 topBar.localScale = new Vector3(3, targetTop, 3);
             }
             Transform bottomBar = target.Find("Bars/BottomBar");
@@ -315,7 +343,7 @@ namespace Enhanced_Resolution
                 targetTop = (targetTop < 2) ? targetTop * 3 : targetTop;
                 bottomBar.localScale = new Vector3(3, targetTop, 3);
             }
-            
+
         }
 
         Transform FindByNameWithSlashes(Transform parent, string exactName)
@@ -328,7 +356,7 @@ namespace Enhanced_Resolution
             return null;
         }
 
-        void fixBookManager(BookManager managerOri, Transform target, MainFader targetFader )
+        void fixBookManager(BookManager managerOri, Transform target, MainFader targetFader)
         {
             try
             {
@@ -340,6 +368,19 @@ namespace Enhanced_Resolution
                 managerOri.TextBox = target.Find("BoxHolder/Book Content").GetComponent<TextMeshProUGUI>();
                 managerOri.screen = UIcopy.transform.Find("Inventory/InventoryCanvas/Radio Diagnostics Mask/Objects/Memories").GetComponent<BookScreen>();
                 target.Find("BoxHolder").localScale = new Vector3(3, 3, 3);
+                UIcopy.transform.Find("Inventory/InventoryCanvas/Radio Diagnostics Mask/Objects").GetComponent<DiagonisticModuleSelector>().BookM = managerOri;
+                GameObject noOverlay = null;
+                Transform memories = UIcopy.transform.Find("Inventory/InventoryCanvas/Radio Diagnostics Mask/Objects/Memories");
+                for(int i = 0; i < memories.childCount; i++)
+                {
+                    if (memories.GetChild(i).name == "NoModuleOverlay")
+                    {
+                        noOverlay = memories.GetChild(i).gameObject;
+                        break;
+                    }
+                }
+                managerOri.noModule =noOverlay;
+                managerOri.ListPivot = UIcopy.transform.Find("Inventory/InventoryCanvas/Radio Diagnostics Mask/Objects/Memories/Zero/Pivot").transform;
             }
             catch (Exception ex)
             {
