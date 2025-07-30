@@ -225,14 +225,13 @@ namespace Enhanced_Resolution
                     }
 
 
-                    if (PlayerState.gameState != PlayerState.gameStates.play || !fixOrthoPlay)
+                    if (!fixOrthoPlay)
                     {
                         foreach (Camera cam in camerasOrtho)
                         {
                             cam.orthographicSize = 18;
                         }
-                        fixOrthoPlay = (PlayerState.gameState != PlayerState.gameStates.play) ? false : true;
-                        if (counterUI < 2) fixOrthoPlay = (PlayerState.gameState != PlayerState.gameStates.inventory) ? false : true;
+                        fixOrthoPlay = (PlayerState.gameState != PlayerState.gameStates.inventory) ? false : true;
                     }
 
                 }
